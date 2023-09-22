@@ -19,6 +19,11 @@ namespace Infrastructure.Data
             return await _context.Set<T>().FindAsync(id);
         }
 
+        public async Task<int> GetCountAsync(ISpecification<T> specification)
+        {
+            return await ApplySpecification(specification).CountAsync();
+        }
+
         public async Task<T> GetEntityWithSpecification(ISpecification<T> specification)
         {
             return await ApplySpecification(specification).FirstOrDefaultAsync();
