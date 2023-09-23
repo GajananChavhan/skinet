@@ -21,7 +21,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseAuthorization();
-
+app.UseCors("CorsPolicy");
 app.MapControllers();
 
 using var scope = app.Services.CreateScope();
