@@ -23,10 +23,12 @@
     "cuid": "^3.0.0",
     "font-awesome": "^4.7.0",
     "ngx-bootstrap": "^10.3.0",
+    "ngx-spinner": "^15.0.1",
     "ngx-toastr": "^16.2.0",
     "node-sass": "^8.0.0",
     "rxjs": "^7.6.0",
     "tslib": "^2.6.2",
+    "xng-breadcrumb": "^9.0.0",
     "zone.js": "~0.11.4"
   },
   "devDependencies": {
