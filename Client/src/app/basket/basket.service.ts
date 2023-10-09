@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, retry } from 'rxjs';
-import { Basket, BasketItem } from '../shared/models/basket';
+import { Basket, BasketItem, BasketTotals } from '../shared/models/basket';
 import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Product } from '../shared/models/product';
@@ -11,12 +11,17 @@ import { Product } from '../shared/models/product';
 export class BasketService {
   baseUrl = environment.apiUrl;
   private basketSource = new BehaviorSubject<Basket | null>(null);
+  private basketTotalsSource = new BehaviorSubject<BasketTotals | null>(null);
+  basketTotalsSource$ = this.basketTotalsSource.asObservable();
   basketSource$ = this.basketSource.asObservable();
   constructor(private http: HttpClient) { }
 
   getBasket(id: string) {
     return this.http.get<Basket>(this.baseUrl + 'basket?id=' + id).subscribe({
-      next: basket => this.basketSource.next(basket)
+      next: basket => {
+        this.basketSource.next(basket);
+        this.calculateTotals();
+      }
     });
   }
 
@@ -30,11 +35,43 @@ export class BasketService {
     return this.basketSource.value;
   }
 
-  addItemToBasket(item: Product, quantity = 1) {
-    const itemToAdd = this.mapProductToBasketItem(item);
+  addItemToBasket(item: Product | BasketItem, quantity = 1) {
+    if (this.isProduct(item))
+      item = this.mapProductToBasketItem(item);
     const basket = this.getCurretValueOfBasket() ?? this.createBasket();
-    basket.items = this.addOrUpdateItem(basket.items, itemToAdd, quantity);
+    basket.items = this.addOrUpdateItem(basket.items, item, quantity);
     this.setBasket(basket);
+    this.calculateTotals();
+  }
+
+  removeItemsFromBasket(id: number, quantity = 1) {
+    const basket = this.getCurretValueOfBasket();
+    if (!basket) {
+      return;
+    }
+    const item = basket.items.find(x => x.id === id);
+    if (item) {
+      item.quantity -= quantity;
+      if (item.quantity === 0) {
+        basket.items = basket.items.filter(x => x.id !== id);
+      }
+      if(basket.items.length > 0){
+        this.setBasket(basket);
+      }
+      else {
+        this.deleteBasket(basket)
+      }
+      this.calculateTotals();
+    }
+  }
+  deleteBasket(basket: Basket) {
+    return this.http.delete(this.baseUrl + 'basket?id='+basket.id).subscribe({
+      next:()=>{
+        this.basketSource.next(null);
+        this.basketTotalsSource.next(null);
+        localStorage.removeItem('basketId');
+      }
+    })
   }
 
   addOrUpdateItem(items: BasketItem[], itemToAdd: BasketItem, quantity: number): BasketItem[] {
@@ -65,5 +102,18 @@ export class BasketService {
       price: item.price,
       pictureUrl: item.pictureUrl
     }
+  }
+  private calculateTotals(){
+    const basket = this.getCurretValueOfBasket();
+    if(!basket){
+      return;
+    }
+    const shipping = 0;
+    const subtotal = basket.items.reduce((a,b)=>(b.price*b.quantity)+ a, 0);
+    const total = subtotal + shipping;
+    this.basketTotalsSource.next({shipping, subtotal, total});
+  }
+  isProduct(item: Product | BasketItem): item is Product {
+    return (item as Product).productType !== undefined
   }
 }
