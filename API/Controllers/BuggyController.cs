@@ -1,4 +1,5 @@
 ﻿using Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,6 +24,15 @@ namespace API.Controllers
             }
             return Ok(thing);
         }
+
+        [HttpGet("testauth")]
+        [Authorize]
+        public ActionResult<string> GetSecretText()
+        {
+            
+            return "stuff";
+        }
+
         [HttpGet("servererror")]
         public ActionResult GetServerErrorRequest()
         {
